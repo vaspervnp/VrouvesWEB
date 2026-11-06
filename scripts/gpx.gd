@@ -100,6 +100,20 @@ func interstitial() -> void:
 	_ad_busy = false
 
 
+## a rewarded ad the player chose to watch: await it; true only if it was watched to the end
+func reward() -> bool:
+	if not _gp or _ad_busy:
+		return false
+	_ad_busy = true
+	var ok := [false]
+	_gp.ads.reward().then(_cb(func(a):
+		ok[0] = a.size() > 0 and a[0] != null and bool(a[0].success)
+		_ad_done.emit()))
+	await _ad_done
+	_ad_busy = false
+	return ok[0]
+
+
 # ------------------------------------------------------------------ saving
 
 ## a saved value (Dictionary, Array, ...), or null if there is none

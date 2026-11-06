@@ -13,6 +13,9 @@ GamePix SDK v3.
   * the title screen calls `lifecycle.loaded()`, and the first Start calls `gameStart()`;
   * an interstitial ad plays after every stage that is won or lost. The SDK pauses the
     game around it;
+  * a lost stage offers a rewarded ad: "Watch an ad: +1 life" (`ads.reward()`, once a
+    stage). The life is given only when the ad was watched to the end. With it, a lost
+    stage is played again even with no lives left, and no interstitial follows;
   * a won stage reports `happyMoment("level_complete")`, and a lost one reports
     `sadMoment("level_failed" / "game_over")`. The game also sends `updateLevel` and
     `updateScore`.
@@ -67,6 +70,9 @@ Developer arguments work as on the PC (`--stage N --bot`, `--ending SCORE`, `--l
 `index.html`, after a `"--"`.
 
 ## Uploading to GamePix
+
+The game's GamePix id is **V5VT7S**. The code does not need it: the SDK learns the game from
+the GamePix player that hosts it.
 
 On the partner dashboard, upload `build/LetsGoForVrouves-gamepix.zip`. Use
 `art/icon_512.png` / `art/icon_1024.png` for the icon and `art/title.png` for the cover;

@@ -121,6 +121,7 @@ var hover_btn := ""
 var sell_cell := Vector2i(-1, -1)       # a defender clicked once: a second click sells it
 var sell_t := 0.0
 var has_left := false
+var reward := 0                         # the ad for a life on a lost stage: 1 playing, 2 won, 3 none
 var buttons := {}                       # name -> Rect2, the clickable parts of the HUD
 var bot := false                        # plays by itself (--bot, the tests, the title demo)
 var bot_step := 0
@@ -768,6 +769,26 @@ func leave() -> void:
 		finished.emit("quit", score)
 
 
+## a lost stage: the player may watch an ad for one more life (GamePix only, once a stage)
+func can_reward() -> bool:
+	return game_over == 2 and Gpx.active() and not bot
+
+
+func watch_ad() -> void:
+	if reward != 0:
+		return
+	reward = 1
+	Sfx.play("move")
+	if await Gpx.reward():
+		reward = 2
+		lives += 1
+		banner = [Data.stage_text(stage_no, 2), Data.t("life_won"), Data.t("press")]
+		Sfx.play("build")
+	else:
+		reward = 3
+		Sfx.play("error")
+
+
 # ====================================================================== input
 
 func _unhandled_input(ev: InputEvent) -> void:
@@ -784,7 +805,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseButton and ev.pressed:
 		var p: Vector2 = get_local_mouse_position()
 		if game_over:
-			if end_wait > 1.2:
+			if buttons.has("reward") and buttons["reward"].has_point(p):
+				watch_ad()
+			elif end_wait > 1.2 and reward != 1:
 				leave()
 			return
 		for b in buttons:
@@ -817,7 +840,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	var k: int = ev.keycode
 	if game_over:
-		if end_wait > 1.2 and k in [KEY_SPACE, KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE]:
+		if end_wait > 1.2 and reward != 1 and k in [KEY_SPACE, KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE]:
 			leave()
 		return
 	match k:
@@ -1282,6 +1305,16 @@ func draw_banner() -> void:
 	if banner.is_empty():
 		return
 	box(banner)
+	if can_reward() and reward != 2:
+		var r := Rect2(PF_W / 2 - 220, TOP + PF_H / 2 + 80, 440, 70)
+		var label: String = [Data.t("reward_btn"), Data.t("reward_wait"), "", Data.t("reward_none")][reward]
+		if reward == 0:
+			buttons["reward"] = r
+		var pulse := 0.5 + 0.5 * sin(time * 5.0)
+		draw_rect(Rect2(r.position + Vector2(6, 6), r.size), Color(0, 0, 0, 0.35))
+		draw_rect(r, Color(0.15, 0.55, 0.25) if reward == 0 else Color(0.3, 0.3, 0.35))
+		draw_rect(r, C_GOLD.lerp(Color.WHITE, pulse) if reward == 0 else Color(1, 1, 1, 0.3), false, 4.0)
+		text(r.position + Vector2(0, 46), label, 28, Color.WHITE if reward == 0 else Color(1, 1, 1, 0.6), HORIZONTAL_ALIGNMENT_CENTER, r.size.x, Data.font_title, 4)
 
 
 func box(lines: Array) -> void:

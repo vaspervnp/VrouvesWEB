@@ -111,17 +111,21 @@ func start_stage() -> void:
 		if "--funds" in a:
 			# a richer start, to fill the map sooner when recording a video
 			g.funds = int(a[a.find("--funds") + 1])
-	g.finished.connect(_on_stage_finished)
+	g.finished.connect(_on_stage_finished.bind(g))
 	swap(g)
 
 
-func _on_stage_finished(result: String, s: int) -> void:
+func _on_stage_finished(result: String, s: int, g: Node) -> void:
 	print("stage %d %s score %d" % [stage_no, result, s])
+	# the life the player won by watching an ad; that ad is the one between stages too
+	var rewarded: bool = g.reward == 2
+	if rewarded:
+		lives += 1
 	if result == "won":
 		Gpx.happy("level_complete")
 	elif result == "lost":
 		Gpx.sad("level_failed" if lives > 0 else "game_over")
-	if result != "quit":
+	if result != "quit" and not rewarded:
 		await Gpx.interstitial()
 	match result:
 		"won":
