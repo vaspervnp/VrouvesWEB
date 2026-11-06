@@ -38,6 +38,13 @@ func _cb(f: Callable) -> JavaScriptObject:
 	return c
 
 
+## what an ad call resolved with, for the console: {"success":false,"message":"..."} says why none showed
+func _json(args: Array) -> String:
+	if args.is_empty() or args[0] == null:
+		return "(nothing)"
+	return str(JavaScriptBridge.get_interface("JSON").stringify(args[0]))
+
+
 func active() -> bool:
 	return _gp != null
 
@@ -55,7 +62,7 @@ func hold(why: String, on: bool) -> void:
 ## the page has finished loading and the title screen is up
 func loaded() -> void:
 	if _gp:
-		_gp.lifecycle.loaded()
+		_gp.lifecycle.loaded().then(_cb(func(a): print("GamePix: loaded ", _json(a))))
 
 
 ## the first time the player starts a game
@@ -95,7 +102,10 @@ func interstitial() -> void:
 	if not _gp or _ad_busy:
 		return
 	_ad_busy = true
-	_gp.ads.interstitial().then(_cb(func(_a): _ad_done.emit()))
+	print("GamePix: interstitial requested")
+	_gp.ads.interstitial().then(_cb(func(a):
+		print("GamePix: interstitial result ", _json(a))
+		_ad_done.emit()))
 	await _ad_done
 	_ad_busy = false
 
@@ -106,7 +116,9 @@ func reward() -> bool:
 		return false
 	_ad_busy = true
 	var ok := [false]
+	print("GamePix: rewarded ad requested")
 	_gp.ads.reward().then(_cb(func(a):
+		print("GamePix: rewarded ad result ", _json(a))
 		ok[0] = a.size() > 0 and a[0] != null and bool(a[0].success)
 		_ad_done.emit()))
 	await _ad_done
