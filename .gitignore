@@ -1,0 +1,6 @@
+.godot/
+scratch/
+build/
+*.import.tmp
+__pycache__/
+.venv/
